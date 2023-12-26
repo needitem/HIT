@@ -1,91 +1,119 @@
-"""
-StarGAN v2
-Copyright (c) 2020-present NAVER Corp.
-
-This work is licensed under the Creative Commons Attribution-NonCommercial
-4.0 International License. To view a copy of this license, visit
-http://creativecommons.org/licenses/by-nc/4.0/ or send a letter to
-Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
-"""
-
-import os
-import argparse
-
+from typing import Tuple
 import torch
 import torch.nn as nn
-import numpy as np
+import torch.nn.functional as F
 from torchvision import models
-from scipy import linalg
-from core.data_loader import get_eval_loader
+import scipy
+from torch.autograd import Variable
+import numpy as np
 
-try:
-    from tqdm import tqdm
-except ImportError:
-    def tqdm(x): return x
-
-
-class InceptionV3(nn.Module):
+class PartialInception(nn.Module):
     def __init__(self):
-        super().__init__()
-        inception = models.inception_v3(pretrained=True)
-        self.block1 = nn.Sequential(
-            inception.Conv2d_1a_3x3, inception.Conv2d_2a_3x3,
-            inception.Conv2d_2b_3x3,
-            nn.MaxPool2d(kernel_size=3, stride=2))
-        self.block2 = nn.Sequential(
-            inception.Conv2d_3b_1x1, inception.Conv2d_4a_3x3,
-            nn.MaxPool2d(kernel_size=3, stride=2))
-        self.block3 = nn.Sequential(
-            inception.Mixed_5b, inception.Mixed_5c,
-            inception.Mixed_5d, inception.Mixed_6a,
-            inception.Mixed_6b, inception.Mixed_6c,
-            inception.Mixed_6d, inception.Mixed_6e)
-        self.block4 = nn.Sequential(
-            inception.Mixed_7a, inception.Mixed_7b,
-            inception.Mixed_7c,
-            nn.AdaptiveAvgPool2d(output_size=(1, 1)))
-
+        super(PartialInception, self).__init__()
+        
+        self.inc = models.inception_v3(pretrained=True)
+        self.inc.Mixed_7c.register_forward_hook(self.outhook)
+    
+    def outhook(self, module, inp, output):
+        self.mixed_7c_output = output
+    
     def forward(self, x):
-        x = self.block1(x)
-        x = self.block2(x)
-        x = self.block3(x)
-        x = self.block4(x)
-        return x.view(x.size(0), -1)
+        self.inc(x)
+        act = self.mixed_7c_output
+        act = F.adaptive_avg_pool2d(act, (1, 1))
+        act = torch.flatten(act, 1)
+
+        return act
+
+model = PartialInception()
+
+def calculate_fid(gen_images, real_images, batch_size):
+        real_acts = []
+        gen_acts = []
+        import math
+        step_size = int(math.ceil(len(real_images) / batch_size))
+        # print(step_size)
+        for i in range(step_size):
+            real_batch = real_images[i * batch_size:(i + 1) * batch_size]
+            gen_batch = gen_images[i * batch_size:(i + 1) * batch_size]
+            print(len(real_batch))
+            real_acts.append(Variable(model(real_batch))) # Variable
+            gen_acts.append(Variable(model(gen_batch)))
+        
+        x_features = torch.cat(real_acts, dim=0)
+        y_features = torch.cat(gen_acts, dim=0)
+        
+        score = fid_score(x_features, y_features)
+        return score
 
 
-def frechet_distance(mu, cov, mu2, cov2):
-    cc, _ = linalg.sqrtm(np.dot(cov, cov2), disp=False)
-    dist = np.sum((mu -mu2)**2) + np.trace(cov + cov2 - 2*cc)
-    return np.real(dist)
+def covariance(matrix: torch.Tensor, rowvar: bool = True) -> torch.Tensor:
+
+    if matrix.dim() < 2:
+        matrix = matrix.view(1, -1)
+
+    if not rowvar and matrix.size(0) != 1:
+        matrix = matrix.T
+
+    factor = 1.0 / (matrix.size(1) - 1)
+    matrix = matrix - torch.mean(matrix, dim=1, keepdim=True)
+    m_t = matrix.T
+    return factor * matrix.matmul(m_t).squeeze()
 
 
-@torch.no_grad()
-def calculate_fid_given_paths(paths, img_size=256, batch_size=50):
-    print('Calculating FID given paths %s and %s...' % (paths[0], paths[1]))
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    inception = InceptionV3().eval().to(device)
-    loaders = [get_eval_loader(path, img_size, batch_size) for path in paths]
+def fid_score(x_features, y_features):
+        # GPU -> CPU
+        eps=1e-6
+        mean_x, sigma_x = torch.mean(x_features, dim=0), covariance(x_features, rowvar=False)
+        mean_y, sigma_y = torch.mean(y_features, dim=0), covariance(y_features, rowvar=False)
+        mean_diff = mean_x - mean_y
+        # covmean, _ = _sqrtm_newton_schulz(sigma_x.mm(sigma_y))
+        covmean, _ = scipy.linalg.sqrtm(sigma_x.mm(sigma_y), disp=False)
+        if np.iscomplexobj(covmean):
+            covmean = covmean.real
+        covmean = torch.tensor(covmean)
+        # Product might be almost singular
+        if not torch.isfinite(covmean).all():
+            offset = torch.eye(sigma_x.size(0), device=mean_x.device, dtype=mean_x.dtype) * eps
+            # covmean, _ = _sqrtm_newton_schulz((sigma_x + offset).mm(sigma_y + offset))
+            covmean, _ = scipy.linalg.sqrtm((sigma_x + offset).dot(sigma_y + offset), disp=False)
 
-    mu, cov = [], []
-    for loader in loaders:
-        actvs = []
-        for x in tqdm(loader, total=len(loader)):
-            actv = inception(x.to(device))
-            actvs.append(actv)
-        actvs = torch.cat(actvs, dim=0).cpu().detach().numpy()
-        mu.append(np.mean(actvs, axis=0))
-        cov.append(np.cov(actvs, rowvar=False))
-    fid_value = frechet_distance(mu[0], cov[0], mu[1], cov[1])
-    return fid_value
+        tr_covmean = torch.trace(covmean)
+        score = mean_diff.dot(mean_diff) + torch.trace(sigma_x) + torch.trace(sigma_y) - 2 * tr_covmean
+    
+        return score
+    
+# You can append as many input and embedded images as you want and calculate the FID score using the code below
 
+import os
+from PIL import Image
+import torchvision.transforms as transforms
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--paths', type=str, nargs=2, help='paths to real and fake images')
-    parser.add_argument('--img_size', type=int, default=256, help='image resolution')
-    parser.add_argument('--batch_size', type=int, default=64, help='batch size to use')
-    args = parser.parse_args()
-    fid_value = calculate_fid_given_paths(args.paths, args.img_size, args.batch_size)
-    print('FID: ', fid_value)
+input_images = []
+blended_images = []
+for im_path in os.listdir('img/input/'):
+    im_path = f'img/input/{im_path}'
+    print('analyzing: ', im_path)
+    inp_img = Image.open(im_path)
+    inp_tens = transforms.ToTensor()(inp_img).unsqueeze(0)
+    input_images.append(inp_tens[:, :3, :, :])
 
-# python -m metrics.fid --paths PATH_REAL PATH_FAKE
+for im_path in os.listdir('output__/'):
+    img_name = im_path
+    im_path = f'output__/{im_path}'
+    if not img_name.startswith('vis_mask') and '.' in img_name:
+        print('analyzing: ', im_path)
+        
+        bld_img2 = Image.open(im_path)
+        bld_img2 = transforms.ToTensor()(bld_img2).unsqueeze(0)
+        blended_images.append(bld_img2)
+real_imgs = torch.cat(input_images, dim=0)
+bld_imags = torch.cat(blended_images, dim=0)
+
+print(real_imgs.shape)
+print(bld_imags.shape)
+
+batch_size = len(real_imgs)
+print('batch_size', batch_size)
+score = calculate_fid(bld_imags, real_imgs, batch_size)
+print(score)
