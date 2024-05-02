@@ -60,20 +60,22 @@ export default {
 
       // Get the data URL directly
       const dataURL = canvas.toDataURL("image/png");
-
+      
       // Download the image
-      this.downloadImage(dataURL, "captured_image.png");
+      //this.downloadImage(dataURL, "captured_image.png");
 
       // Uncomment the following block if you want to upload to the server using axios
       canvas.toBlob((blob) => {
         const formData = new FormData();
         formData.append('image', blob, 'captured_image.png');
-        axios.post('http://localhost:8000/build', formData)
+        //axios.post('http://localhost:8000/build', formData)
+        axios.post('http://localhost:8000/upload', formData)
           .then(response => {
             console.log(response.data);
           })
           .catch(error => {
             console.error(`Error uploading image: ${error}`);
+           
           });
       }, 'image/png');
     },

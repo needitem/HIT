@@ -1,8 +1,7 @@
 const http = require('http');   // socket.io 서버를 올리기 위해 필요
 
-const multer = require('multer'); // 이미지, 동영상 등 업로드 시 필요
-const path = require('path');
-
+// const multer = require('multer'); // 이미지, 동영상 등 업로드 시 필요
+// const path = require('path');
 
 const express = require('express');
 const cors = require('cors');
@@ -10,40 +9,11 @@ const cors = require('cors');
 const app = express();      //express app 생성
 const webSocket = require('./socket.js');
 
-//---------------------
-// 이미지를 저장할 폴더 설정
-const uploadDir = path.join(__dirname, 'CaptureImg');
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const timestamp = Date.now(); // 타임스탬프를 이용하여 파일 이름 생성
-        const extension = path.extname(file.originalname); // 원본 파일의 확장자를 가져옴
-        const filename = `captured_image_${timestamp}${extension}`;
-        cb(null, filename);
-    },
-});
 
-const upload = multer({ storage: storage });
-
-//---------------------
 app.use(express.json());  //json 형식 파싱하기
 
 app.use(express.static('public')); //클라이언트에게 정적 파일(이미지, CSS, JavaScript 파일 등)을 제공할 때 사용,
 //클라이언트에서 요청한 파일을 서버에서 제공할 수 있게 됩니다.
-
-// 이미지 업로드 처리
-app.post('/upload', upload.single('image'), (req, res) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:8080'); // Vue.js 애플리케이션의 주소로 변경
-    res.header('Access-Control-Allow-Credentials', true);
-    console.log('Image uploaded successfully');
-    res.status(200).send('Image uploaded successfully');
-});
-
-
-
-
 
 // app.use(cors({
 //     origin: 'http://localhost:8080',  //oring:'*'은 모두 다 허용인데 쿠키쓰려면 명확히 지정해줘야함
@@ -59,15 +29,7 @@ app.use(cors({
     optionsSuccessStatus: 200,
 }));
 
-const dbconfig = require("./db.js");
-const mongoose = require('mongoose');
-//데이터베이스 연결 및 상태 로깅
-mongoose.connect(dbconfig.url, { useNewUrlParser: true })
-    .then(() => {
-        console.log("정상적으로 MongoDB 서버에 연결되었습니다.");
-    }).catch(err => {
-        console.log("MongoDB에 연결되지 않았습니다.", err);
-    });
+
 
 require('./passport-session.js')(app);
 
@@ -85,19 +47,3 @@ const server = app.listen(port, () => {
 });
 webSocket(server); // ws와 http 포트 공유
 
-/*
-const io = socketio(httpServer,{
-    cors:{                              //socket 사용시에 CORS 허용 설정
-        origin:'*',
-        method:["GET","PUT","POST"]
-    }
-});
-io.sockets.on('connection',function(socket){
-    // 소켓 통신을 위한 소켓을 전역적으로 쓸 수 있도록 정의
-    global.$socket = socket;
-    // 소켓 이벤트 처리
-    socket.on('rint',function(data){
-        console.log('Client Data:',data);
-    })
-});
-*/
