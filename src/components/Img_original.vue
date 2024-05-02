@@ -69,7 +69,7 @@ export default {
         const formData = new FormData();
         formData.append('image', blob, 'captured_image.png');
         //axios.post('http://localhost:8000/build', formData)
-        axios.post('http://localhost:8000/upload', formData)
+        axios.post('http://localhost:5000/resize', formData)
           .then(response => {
             console.log(response.data);
           })
