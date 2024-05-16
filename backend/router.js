@@ -2,7 +2,7 @@
 module.exports = (app) => {
   const imgDB = require("./imgDB.js");
   const conn = imgDB.init();
-
+  const fs = require('fs');
   const path = require('path');
   const multer = require('multer'); // 이미지, 동영상 등 업로드 시 필요
   //const imgDB = require('./imgDBcontroller.js');
@@ -25,11 +25,11 @@ module.exports = (app) => {
 
   const upload = multer({ storage: storage });
 
- 
+
   // 이미지 경로DB 전부 조회
- 
+
   app.get('/imgS', (req, res) => {
-    var sql = "SELECT * FROM blobpractice.blob";
+    var sql = "SELECT * FROM images_schema.images";//blobpractice.blob";
     conn.query(sql, function (err, result) {
       if (err) console.log("query is not excuted: " + err);
       else res.send(result);
@@ -54,6 +54,56 @@ module.exports = (app) => {
       } else {
         res.send('File uploaded successfully and filename inserted into database');
       }
+    });
+  });
+
+  //test이미지 삽입(디버깅용)
+  app.get('/testimg', (req, res) => {
+    const filePath = "C:\\Users\\Owner\\Desktop\\capture 1.png"
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        console.error('Error reading the file:', err);
+        conn.end();
+        return;
+      }
+
+      // 이미지 데이터를 테이블에 삽입
+      const sqlQuery = 'INSERT INTO Images (Id, Data) VALUES (?, ?)';
+      const values = ['1', data];
+
+      conn.query(sqlQuery, values, (err, results) => {
+        if (err) {
+          console.error('Error inserting data into the table:', err);
+          conn.end();
+          return;
+        }
+        console.log('Data inserted successfully:', results);
+
+        // 연결 종료
+        conn.end();
+      });
+    });
+  })
+
+  app.get('/image/:id', (req, res) => {
+    const imageId = req.params.id;
+
+    conn.query('SELECT * FROM images_schema.images WHERE Id = 1', (err, results) => {
+      if (err) {
+        console.error('Error fetching image data:', err);
+        res.status(500).send('Error fetching image data');
+        return;
+      }
+
+      if (results.length === 0 || !results[0].Data) { // 이미지 데이터가 없는 경우 처리
+        res.status(404).send('Image not found');
+        return;
+      }
+
+      const imageData = results[0].image_data.toString('base64'); // 이미지 데이터를 Base64로 인코딩
+      const src = `data:image/jpeg;base64,${imageData}`; // Base64 데이터를 이미지 URL로 변환
+
+      res.send(`<img src="${src}" alt="Image">`); // 이미지를 HTML로 응답
     });
   });
 

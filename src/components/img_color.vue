@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="original-image-container">
-      <img :src="imageUrl || require('@/assets/헤어아이콘.png')" alt="원본 이미지" class="original-image">
+      <img :src="imageUrl || require('@/assets/팔레트아이콘.png')" alt="원본 이미지" class="original-image">
     </div>
 
     <div class="upload-container">

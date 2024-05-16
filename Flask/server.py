@@ -21,8 +21,8 @@ def run_python_file():
     if file:
         filename = secure_filename(file.filename)
         file_path = os.path.join('./', filename)
-        #file.save(file_path)
-
+        file.save(file_path)
+        print("경로 : " + file_path)
         # Run your Python script here with the image file
         result = subprocess.check_output(['python', 'head.py', 'output/15.png', file_path, 'output/resized_face_area.png'])
 
