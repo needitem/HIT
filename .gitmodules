@@ -1,0 +1,3 @@
+[submodule "HairFastGan"]
+	path = HairFastGan
+	url = https://github.com/AIRI-Institute/HairFastGAN
