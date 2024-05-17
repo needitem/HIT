@@ -34,8 +34,11 @@ export default {
   methods: {
     onFileChange(event) {
       this.files = Array.from(event.target.files);
+    },
 
-      const file = event.target.files[0];
+
+    Imageinput(e) {
+      const file = e.target.files[0];
       if (file) {
         this.file = file;
         const reader = new FileReader();
@@ -45,9 +48,6 @@ export default {
         reader.readAsDataURL(file);
       }
     },
-
-
-
 
 
 
@@ -65,6 +65,24 @@ export default {
       //   this.error = 'Error fetching data: ' + err.message;
       // }
 
+      // try {
+      //   const form = new FormData();
+      //   const image = this.$refs.image.files[0];
+        
+      //   form.append('goodsId', image);
+      //   console.log('FormData:', form);
+
+      //   const response = await axios.post('/api/get_pic', form, {
+      //     headers: { 'Content-Type': 'multipart/form-data' },
+      //   });
+
+      //   console.log('Response:', response);
+      //   this.images = response.data;
+
+      // } catch (err) {
+      //   console.error('Error:', err);
+      //   this.error = 'Error uploading image: ' + err.message;
+      // }
 
 
       
