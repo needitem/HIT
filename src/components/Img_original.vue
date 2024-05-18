@@ -1,6 +1,7 @@
 <template>
   <!-- <div id="contents"> -->
   <div class="original-image-container">
+    <br><br>
     <div class="camera">
       <video id="video" ref="video" @canplay="playVideo"></video>
       <button @click="takePhoto">take Photo</button>
@@ -15,6 +16,8 @@
 
 <script>
 import axios from 'axios';
+
+
 export default {
   name: "start-video-practice",
   data() {
@@ -22,7 +25,10 @@ export default {
       video: null,
       streaming: false,
       height: 280,
-      width: 280
+      width: 280,
+
+      
+   
     }
   },
   mounted() {
@@ -32,6 +38,12 @@ export default {
 
   },
   methods: {
+    //############################################################
+    
+
+    //############################################################
+
+
     getMediaStream() {
       navigator.mediaDevices.getUserMedia(
         { video: true, audio: false } // 비디오, 오디오 사용??
@@ -51,7 +63,8 @@ export default {
         this.video.width = this.width;
       }
     },
-    takePhoto() {
+    async takePhoto() {
+
       const canvas = document.createElement("canvas");
       canvas.width = this.width;
       canvas.height = this.height;
@@ -60,24 +73,29 @@ export default {
 
       // Get the data URL directly
       const dataURL = canvas.toDataURL("image/png");
-      
-      // Download the image
-      //this.downloadImage(dataURL, "captured_image.png");
 
-      // Uncomment the following block if you want to upload to the server using axios
-      canvas.toBlob((blob) => {
+      canvas.toBlob(async (blob) => {
         const formData = new FormData();
-        formData.append('image', blob, 'captured_image.png');
-        //axios.post('http://localhost:8000/build', formData)
-        axios.post('http://localhost:5000/resize', formData)
-          .then(response => {
-            console.log(response.data);
-          })
-          .catch(error => {
-            console.error(`Error uploading image: ${error}`);
-           
+        formData.append('files', blob, '0.png');
+
+        console.log("Blob created:", blob);
+
+        try {
+          const response = await axios.post('/api/get_pic', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
           });
+
+
+        } catch (error) {
+          //console.error(`Error uploading image: ${error}`);
+          alert(`Error uploading image: ${error.response ? error.response.data.error : error.message}`);
+        }
+
+
       }, 'image/png');
+
     },
 
     downloadImage(dataURL, fileName) {
@@ -136,7 +154,7 @@ export default {
   text-align: center;
   max-width: 500px;
   margin: 0 auto;
-  margin-top: 50px;
+  margin-top: 74px;
   border: 2px solid #000000;
 }
 

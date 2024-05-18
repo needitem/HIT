@@ -64,9 +64,6 @@ export default {
       // } catch (err) {
       //   this.error = 'Error fetching data: ' + err.message;
       // }
-
-
-
       
       if (this.files.length === 0) {
         alert('Please select files to upload');
