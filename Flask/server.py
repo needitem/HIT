@@ -2,8 +2,18 @@ from flask import Flask, request
 import subprocess
 from werkzeug.utils import secure_filename
 import os
+from flask_cors import CORS
+import pillow
 
 app = Flask(__name__)
+CORS(app)
+
+@app.route('/hello')
+def hello():
+    return 'Hello, World!'
+
+
+
 
 @app.route('/resize', methods=['POST'])
 def run_python_file():

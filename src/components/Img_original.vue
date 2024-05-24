@@ -7,8 +7,9 @@
       <button @click="takePhoto">take Photo</button>
     </div>
 
-    <div class="original-image">
-      <button @click="executeOSCommand">execute OS command</button>
+
+    <div>
+    <button @click="getIndex">Perform Activity</button>
     </div>
   </div>
   <!-- </div> -->
@@ -24,24 +25,45 @@ export default {
     return {
       video: null,
       streaming: false,
-      height: 280,
-      width: 280,
+      height: 0,//280,
+      width: 320,//280,
 
-      
-   
+      colorIndex: null,
     }
   },
   mounted() {
     this.video = this.$refs.video;
 
     this.getMediaStream();
-
+    
+    this.$bus.$on('imageClicked',(colorIndex)=>{
+      this.colorIndex = colorIndex;
+    });
   },
   methods: {
-    //############################################################
-    
+    async getIndex(){
 
-    //############################################################
+      console.log("버스on:"+this.colorIndex)
+      if(this.colorIndex != null){
+        try {
+          const data = new FormData();
+          data.append('target', "1");
+          data.append('color', this.colorIndex);
+          
+          const response = await axios.post('/api/get_index', data);
+
+          if (response.status === 200) {
+            alert('color index uploaded successfully');
+          } else {
+            // alert(Failed to upload files: ${response.data.error});
+          }
+        } catch (error) {
+          // alert(An error occurred: ${error.response ? error.response.data.error : error.message});
+        }
+      }else{
+        alert("Please select color");
+      }
+    },
 
 
     getMediaStream() {
@@ -64,6 +86,18 @@ export default {
       }
     },
     async takePhoto() {
+      // try {
+      //   this.error = null; // Clear any previous error
+      //   const response = await axios.get('/api/hello', {
+      //     // headers: {
+      //     //   'Content-Type': 'application/json',
+      //     // },
+      //   });
+      //   this.data = response.data;
+      //   console.log(this.data);
+      // } catch (err) {
+      //   this.error = 'Error fetching data: ' + err.message;
+      // }
 
       const canvas = document.createElement("canvas");
       canvas.width = this.width;
@@ -74,6 +108,10 @@ export default {
       // Get the data URL directly
       const dataURL = canvas.toDataURL("image/png");
 
+      // 주석해제 시 다운됨
+      // this.downloadImage(dataURL, "captured_image.png");
+
+      //############### 주석해제
       canvas.toBlob(async (blob) => {
         const formData = new FormData();
         formData.append('files', blob, '0.png');
@@ -86,14 +124,10 @@ export default {
               'Content-Type': 'multipart/form-data'
             }
           });
-
-
         } catch (error) {
           //console.error(`Error uploading image: ${error}`);
           alert(`Error uploading image: ${error.response ? error.response.data.error : error.message}`);
         }
-
-
       }, 'image/png');
 
     },
@@ -106,44 +140,22 @@ export default {
       a.click();
       document.body.removeChild(a);
     },
-    // takePhoto() {
-    //   const canvas = document.createElement("canvas");
-    //   canvas.width = this.width;
-    //   canvas.height = this.height;
-    //   const context = canvas.getContext("2d");
-    //   context.drawImage(this.video, 0, 0, this.width, this.height);
+   
 
-    //   // Convert the canvas content to a Blob
-    //   canvas.toBlob((blob) => {
-    //     // Create a FormData object
-    //     const formData = new FormData();
-    //     formData.append('image', blob, 'captured_image.png');
-
-    //     // Send the image to the server
-    //     axios.post('http://localhost:3000/upload', formData)
-    //       .then(response => {
-    //         console.log(response.data);
-    //       })
-    //       .catch(error => {
-    //         console.error(`Error uploading image: ${error}`);
-    //       });
-    //   }, 'image/png');
-    // }
-
-      makeImage() {
-        //send image route, target route, source color to server
-        axios.post('http://localhost:8000/upload', {
-          image: this.image,
-          target: this.target,
-          source: this.source
-        })
-          .then(response => {
-            console.log(response.data);
-          })
-          .catch(error => {
-            console.error(`Error uploading image: ${error}`);
-          });
-      }
+    makeImage() {
+      //send image route, target route, source color to server
+      axios.post('http://localhost:8000/upload', {
+        image: this.image,
+        target: this.target,
+        source: this.source
+      })
+      .then(response => {
+        console.log(response.data);
+      })
+      .catch(error => {
+        console.error(`Error uploading image: ${error}`);
+      });
+    }
     
   }
 }
@@ -164,10 +176,13 @@ export default {
   box-shadow: 2px 2px 3px black;
   width: 320px;
   height: 240px;
+
+
 }
 
 .camera {
   width: 340px;
+
   display: inline-block;
 }
 </style>

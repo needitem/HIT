@@ -14,12 +14,17 @@
     <div>
       <button @click="send">Send</button>
     </div>
+ 
+    
+
   </div>
 </template>
 
 <script>
+
 import axios from 'axios'
 export default {
+  
   data() {
     return {
       file: null,
@@ -27,14 +32,37 @@ export default {
 
       
       files: [],
+      images:[],
+   
 
-
+      // 선택한 헤어 인덱스
+      select_Hair: null,
     };
   },
-  methods: {
-    onFileChange(event) {
-      this.files = Array.from(event.target.files);
 
+ 
+
+
+    
+  // },
+
+  methods: {
+    // url에 접속 시 헤어 리스트를 받아와 하면에 보여줌
+    init() {
+      axios.get('/api/get_hair') //서버에 요청하기
+        .then((res) => {
+          console.log(res.data.length); //성공시
+        })
+        .catch((err) => {
+          console.log(err);
+          alert('에러 발생: ' + err); //에러 발생
+        });
+    },
+
+
+    onFileChange(event) {
+      //파일 직접 선택
+      this.files = Array.from(event.target.files);
       const file = event.target.files[0];
       if (file) {
         this.file = file;
@@ -44,6 +72,14 @@ export default {
         };
         reader.readAsDataURL(file);
       }
+
+      
+      // if(this.select_Hair){
+      //   // 선택시 인덱스 
+      //   this.$bus.$emit('hair_Index', this.select_Hair);
+      //   console.log("헤어인덱스 전송완료")
+      // }
+
     },
 
 
@@ -52,12 +88,13 @@ export default {
 
 
     async send() {
+
       // try {
       //   this.error = null; // Clear any previous error
       //   const response = await axios.get('/api/hello', {
-      //     headers: {
-      //       'Content-Type': 'application/json',
-      //     },
+      //     // headers: {
+      //     //   'Content-Type': 'application/json',
+      //     // },
       //   });
       //   this.data = response.data;
       //   console.log(this.data);
