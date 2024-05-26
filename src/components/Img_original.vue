@@ -29,6 +29,7 @@ export default {
       width: 320,//280,
 
       colorIndex: null,
+      hariIndex: null,
     }
   },
   mounted() {
@@ -36,8 +37,12 @@ export default {
 
     this.getMediaStream();
     
-    this.$bus.$on('imageClicked',(colorIndex)=>{
+    this.$bus.$on('color_Clicked',(colorIndex)=>{
       this.colorIndex = colorIndex;
+    });
+        
+    this.$bus.$on('hair_Clicked',(hairIndex)=>{
+      this.hairIndex = hairIndex;
     });
   },
   methods: {
@@ -47,7 +52,7 @@ export default {
       if(this.colorIndex != null){
         try {
           const data = new FormData();
-          data.append('target', "1");
+          data.append('target', this.hairIndex);
           data.append('color', this.colorIndex);
           
           const response = await axios.post('/api/get_index', data);

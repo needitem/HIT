@@ -1,149 +1,125 @@
 <template>
-  <div>
-    <div class="original-image-container">
-      <img :src="imageUrl || require('@/assets/헤어아이콘.png')" alt="원본 이미지" class="original-image">
-    </div>
 
-    <div class="upload-container">
-      <input type="file" accept="image/*" @change="onFileChange"/>
-      <p v-if="file">
-        upload 이미지 : {{ file.name }} ({{ file.size }} bytes) / {{ file.type }}
-      </p>
-    </div>
 
-    <div>
-      <button @click="send">Send</button>
-    </div>
- 
-    
-
+  <div class="original-image-container">
+    <swiper class="swiper" ref="mySwiper" 
+		  :options="swiperOptions" 
+		  @slideChange="slideChangeTransitionStart">
+      
+      <swiper-slide v-for="(slide, index) in images" :key="index">
+        <img :src="slide" alt="slide" @click="handleImageClick(index)"
+        :style="{ border: index === selectedImageIndex ? '2px solid green' : 'none' }"/>
+      </swiper-slide> 
+		
+		  <!-- pagination -->
+		  <div class="swiper-pagination" slot="pagination"></div>
+        
+		  <!-- navigation -->
+		  <div class="swiper-button-prev swiper-btn-prev" slot="button-prev"></div>
+		  <div class="swiper-button-next swiper-btn-next" slot="button-next"></div>
+	  </swiper>
   </div>
 </template>
 
 <script>
-
-import axios from 'axios'
+import { Swiper, SwiperSlide } from "vue-awesome-swiper";
+import "swiper/css/swiper.css";
 export default {
-  
+  name: "slider",
+  components: {
+    Swiper,
+    SwiperSlide
+  },
   data() {
     return {
-      file: null,
-      imageUrl: null,
-
+      selectedImageIndex: -1,
       
-      files: [],
-      images:[],
-   
-
-      // 선택한 헤어 인덱스
-      select_Hair: null,
+      images: [],
+      swiperOptions: {
+					//loop: true,
+					// autoplay:{
+					//   delay:1000
+					// },
+					pagination: {
+						el: '.swiper-pagination'
+					},
+					navigation: {
+						nextEl: '.swiper-button-next',
+						prevEl: '.swiper-button-prev',
+					},                    
+			},
+      swiper: null // swiper instance를 저장할 변수 추가
     };
   },
-
- 
-
-
-    
-  // },
-
   methods: {
-    // url에 접속 시 헤어 리스트를 받아와 하면에 보여줌
-    init() {
-      axios.get('/api/get_hair') //서버에 요청하기
-        .then((res) => {
-          console.log(res.data.length); //성공시
-        })
-        .catch((err) => {
-          console.log(err);
-          alert('에러 발생: ' + err); //에러 발생
-        });
+   
+    handleImageClick(index) {
+      // 선택된 이미지의 인덱스를 업데이트
+      this.selectedImageIndex = index;
+      console.log("이미지 클릭됨:", index);
+      // 기존의 이벤트 처리 로직 추가 가능
+      this.$bus.$emit('hair_Clicked', index);
     },
 
+    slideChangeTransitionStart() {
 
-    onFileChange(event) {
-      //파일 직접 선택
-      this.files = Array.from(event.target.files);
-      const file = event.target.files[0];
-      if (file) {
-        this.file = file;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          this.imageUrl = event.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-
+      if (this.swiper) {
+        console.log("현재 활성화된 슬라이드의 인덱스:", this.swiper.activeIndex);
       
-      // if(this.select_Hair){
-      //   // 선택시 인덱스 
-      //   this.$bus.$emit('hair_Index', this.select_Hair);
-      //   console.log("헤어인덱스 전송완료")
-      // }
-
-    },
-
-
-
-
-
-
-    async send() {
-
-      // try {
-      //   this.error = null; // Clear any previous error
-      //   const response = await axios.get('/api/hello', {
-      //     // headers: {
-      //     //   'Content-Type': 'application/json',
-      //     // },
-      //   });
-      //   this.data = response.data;
-      //   console.log(this.data);
-      // } catch (err) {
-      //   this.error = 'Error fetching data: ' + err.message;
-      // }
-      
-      if (this.files.length === 0) {
-        alert('Please select files to upload');
-        return;
       }
+		},
 
-      const formData = new FormData();
-  
-      this.files.forEach((file, index) => {
-        formData.append('files', file);
-      });
 
+
+    async fetchImages() {
       try {
-        const response = await axios.post('/api/get_pic', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-
-        if (response.status === 200) {
-          alert('Files uploaded successfully');
+        const response = await fetch('/api/send_pic');
+        const data = await response.json();
+        if (data.error) {
+          console.error(data.error);
         } else {
-          // alert(Failed to upload files: ${response.data.error});
+          //this.images = data.images;
+          console.log(this.images); // 데이터 확인
+
+          this.images = data.images.map(image => 'data:image/png;base64,' +image);
+
         }
       } catch (error) {
-        // alert(An error occurred: ${error.response ? error.response.data.error : error.message});
+        console.error('Error fetching images:', error);
       }
-
-      
- 
-
     },
+    initializeSwiper() {
+      this.swiper = new Swiper('.swiper-container', {
+        // Optional parameters
+        loop: true,
+        
+        // If you need pagination
+        pagination: {
+          el: '.swiper-pagination',
+        },
+        
+        // Navigation arrows
+        navigation: {
+          nextEl: '.swiper-button-next',
+          prevEl: '.swiper-button-prev',
+        },
+        
+        // And if we need scrollbar
+        scrollbar: {
+          el: '.swiper-scrollbar',
+        },
+      });
+    }
   },
+  mounted() {
+    this.initializeSwiper();
+    this.fetchImages();
+  },
+
 };
-
-
 </script>
 
 <style scoped>
-.upload-container {
-  text-align: center;
-  margin-top: 20px; 
-}
 
 .original-image-container {
   text-align: center;
@@ -153,19 +129,4 @@ export default {
   border: 2px solid #000000;
 }
 
-.original-image {
-  width: 200px;
-  height: 280px;
-  object-fit: cover;
-}
-
-.upload-label {
-  display: inline-block;
-  padding: 10px 20px;
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  cursor: pointer;
-  text-align: center;
-}
 </style>
