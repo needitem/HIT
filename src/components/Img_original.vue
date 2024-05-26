@@ -49,7 +49,7 @@ export default {
     async getIndex(){
 
       console.log("버스on:"+this.colorIndex)
-      if(this.colorIndex != null){
+      if(this.colorIndex != null && this.hairIndex != null){
         try {
           const data = new FormData();
           data.append('target', this.hairIndex);
