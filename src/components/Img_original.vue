@@ -8,8 +8,9 @@
     </div>
 
 
+
     <div>
-    <button @click="getIndex">Perform Activity</button>
+      <button @click="sendImage">이미지 보내기</button>
     </div>
   </div>
   <!-- </div> -->
@@ -28,8 +29,13 @@ export default {
       height: 0,//280,
       width: 320,//280,
 
+
+      
       colorIndex: null,
       hariIndex: null,
+      color_file: null,
+      hair_file: null,
+      files:[],
     }
   },
   mounted() {
@@ -44,21 +50,40 @@ export default {
     this.$bus.$on('hair_Clicked',(hairIndex)=>{
       this.hairIndex = hairIndex;
     });
+
+    this.$bus.$on('color_input',(color_file)=>{
+      this.color_file = color_file;
+    });
+
+    this.$bus.$on('hair_input',(hair_file)=>{
+      this.hair_file = hair_file;
+    });
+
   },
   methods: {
-    async getIndex(){
+    
+    //선택한 사진을 보냄
+    async sendImage(){
+      if(this.color_file != null && this.hair_file != null){
+        if (this.files.length === 0) {
+          alert('Please select files to upload');
+          return;
+        }
+        const formData = new FormData();
+  
+        this.files.forEach((file, index) => {
+          formData.append('files', this.hair_file);
+          formData.append('files', this.color_file);
 
-      console.log("버스on:"+this.colorIndex)
-      if(this.colorIndex != null && this.hairIndex != null){
-        try {
-          const data = new FormData();
-          data.append('target', this.hairIndex);
-          data.append('color', this.colorIndex);
-          
-          const response = await axios.post('/api/get_index', data);
-
-          if (response.status === 200) {
-            alert('color index uploaded successfully');
+        });
+      try {
+        const response = await axios.post('/api/get_pic', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        if (response.status === 200) {
+            alert('Files uploaded successfully');
           } else {
             // alert(Failed to upload files: ${response.data.error});
           }
@@ -66,7 +91,7 @@ export default {
           // alert(An error occurred: ${error.response ? error.response.data.error : error.message});
         }
       }else{
-        alert("Please select color");
+        alert("Please input color&hair");
       }
     },
 
@@ -118,21 +143,21 @@ export default {
 
       //############### 주석해제
       canvas.toBlob(async (blob) => {
-        const formData = new FormData();
-        formData.append('files', blob, '0.png');
-
+        //const formData = new FormData();
+        //formData.append('files', blob, '0.png');
+        this.$bus.$emit('face', blob);
         console.log("Blob created:", blob);
 
-        try {
-          const response = await axios.post('/api/get_pic', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-        } catch (error) {
-          //console.error(`Error uploading image: ${error}`);
-          alert(`Error uploading image: ${error.response ? error.response.data.error : error.message}`);
-        }
+        // try {
+        //   const response = await axios.post('/api/get_pic', formData, {
+        //     headers: {
+        //       'Content-Type': 'multipart/form-data'
+        //     }
+        //   });
+        // } catch (error) {
+        //   //console.error(`Error uploading image: ${error}`);
+        //   alert(`Error uploading image: ${error.response ? error.response.data.error : error.message}`);
+        // }
       }, 'image/png');
 
     },
@@ -147,20 +172,20 @@ export default {
     },
    
 
-    makeImage() {
-      //send image route, target route, source color to server
-      axios.post('http://localhost:8000/upload', {
-        image: this.image,
-        target: this.target,
-        source: this.source
-      })
-      .then(response => {
-        console.log(response.data);
-      })
-      .catch(error => {
-        console.error(`Error uploading image: ${error}`);
-      });
-    }
+    // makeImage() {
+    //   //send image route, target route, source color to server
+    //   axios.post('http://localhost:8000/upload', {
+    //     image: this.image,
+    //     target: this.target,
+    //     source: this.source
+    //   })
+    //   .then(response => {
+    //     console.log(response.data);
+    //   })
+    //   .catch(error => {
+    //     console.error(`Error uploading image: ${error}`);
+    //   });
+    // }
     
   }
 }
@@ -168,6 +193,8 @@ export default {
 
 <style scoped>
 .original-image-container {
+
+  
   text-align: center;
   max-width: 500px;
   margin: 0 auto;
@@ -179,15 +206,17 @@ export default {
 #video {
   border: 1px solid black;
   box-shadow: 2px 2px 3px black;
-  width: 320px;
-  height: 240px;
+  width: 100%;
+  height:auto;
 
 
 }
 
 .camera {
-  width: 340px;
-
+  /* width: 340px; */
+    
+  width: 100%;
+  height:auto;
   display: inline-block;
 }
 </style>

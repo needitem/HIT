@@ -1,16 +1,19 @@
 <template>
   <v-app>
+    <!-- <img :src="require('@/assets/1.png')" alt="원본 이미지" class="original-image"> -->
+
+
     <v-row>
       <v-col cols="3">
         <Img_original />
       </v-col>
-
-      <v-col cols="2">
+      
+      <v-col cols="3" >
         머리모양
         <Img_hair />
       </v-col>
 
-      <v-col cols="2">
+      <v-col cols="3" >
         머리색갈
         <Img_color />
       </v-col>
@@ -18,18 +21,18 @@
       <v-col cols="3">
         <Img_retouch />
       </v-col>
-
+<!-- 
       <v-col cols="2" style="background-color: aqua;">
         <Recom_Image />
-      </v-col>
+      </v-col> -->
     </v-row>
 
-    <v-main style="background-color: rgb(170, 46, 46);">
+    <!-- <v-main style="background-color: rgb(170, 46, 46);">
       <Customize />
       <!--<router-view/>-->
       <!-- <Hair_Curl />
-      <Hair_Long /> -->
-    </v-main>
+      <Hair_Long />
+    </v-main> -->
   </v-app>
 </template>
 
@@ -62,7 +65,8 @@ export default {
   methods: {
     onValueChanged(newValue) {
       console.log("Value changed:", newValue)
-    } 
+    },
+    
   },
 
   data: () => ({
@@ -70,3 +74,27 @@ export default {
   }),
 };
 </script>
+<style scoped>
+
+.original-image-container {
+  width: 100%;
+  height:auto;
+
+
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto;
+  margin-top: 50px;
+  border: 2px solid #000000;
+}
+
+.original-image {
+
+
+width: 800px;
+height: 500px; 
+/* object-fit: cover; */
+object-fit:contain
+}
+
+</style>
