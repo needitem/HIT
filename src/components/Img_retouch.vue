@@ -73,14 +73,14 @@ export default {
             this.formData.append('files', this.hair, 'target.png');
             this.formData.append('files', this.color, 'color.png');
 
-            const blobCount = this.formData.getAll('files').length;
-            if (blobCount < 3) {
-                alert('Please upload all required images (face, hair, color) before sending.');
-                return;
-            } else if (blobCount > 3) {
-                alert('지금 formData에 3개가 초과되는 파일이 들어있음');
-                return;
-            }
+            //const blobCount = this.formData.getAll('files').length;
+            //if (blobCount < 3) {
+            //    alert('Please upload all required images (face, hair, color) before sending.');
+            //    return;
+            //} else if (blobCount > 3) {
+            //    alert('지금 formData에 3개가 초과되는 파일이 들어있음');
+            //    return;
+            //}
 
 
             try {
