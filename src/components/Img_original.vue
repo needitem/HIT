@@ -4,14 +4,17 @@
     <br><br>
     <div class="camera">
       <video id="video" ref="video" @canplay="playVideo"></video>
-      <button @click="takePhoto">take Photo</button>
+      <button @click="takePhoto"  v-show="!showRetakeButton">take Photo</button>
+      
     </div>
-
-
-
     <div>
-      <button @click="sendImage">이미지 보내기</button>
+      <button @click="restartStreaming" v-show="showRetakeButton">다시 찍기</button>
     </div>
+
+
+    <!-- <div>
+      <button @click="sendImage">이미지 보내기</button>
+    </div> -->
   </div>
   <!-- </div> -->
 </template>
@@ -29,40 +32,19 @@ export default {
       height: 0,//280,
       width: 320,//280,
 
-
-      
-      colorIndex: null,
-      hariIndex: null,
-      color_file: null,
-      hair_file: null,
       files:[],
+      showRetakeButton: false
     }
   },
   mounted() {
     this.video = this.$refs.video;
 
     this.getMediaStream();
-    
-    this.$bus.$on('color_Clicked',(colorIndex)=>{
-      this.colorIndex = colorIndex;
-    });
-        
-    this.$bus.$on('hair_Clicked',(hairIndex)=>{
-      this.hairIndex = hairIndex;
-    });
-
-    this.$bus.$on('color_input',(color_file)=>{
-      this.color_file = color_file;
-    });
-
-    this.$bus.$on('hair_input',(hair_file)=>{
-      this.hair_file = hair_file;
-    });
 
   },
   methods: {
     
-    //선택한 사진을 보냄
+    //선택한 사진을 보냄 (지금은 안쓰는버튼 디버그용. 추후 삭제)
     async sendImage(){
       if(this.color_file != null && this.hair_file != null){
         if (this.files.length === 0) {
@@ -116,19 +98,7 @@ export default {
       }
     },
     async takePhoto() {
-      // try {
-      //   this.error = null; // Clear any previous error
-      //   const response = await axios.get('/api/hello', {
-      //     // headers: {
-      //     //   'Content-Type': 'application/json',
-      //     // },
-      //   });
-      //   this.data = response.data;
-      //   console.log(this.data);
-      // } catch (err) {
-      //   this.error = 'Error fetching data: ' + err.message;
-      // }
-
+      this.video.pause();
       const canvas = document.createElement("canvas");
       canvas.width = this.width;
       canvas.height = this.height;
@@ -143,23 +113,20 @@ export default {
 
       //############### 주석해제
       canvas.toBlob(async (blob) => {
-        //const formData = new FormData();
-        //formData.append('files', blob, '0.png');
+
         this.$bus.$emit('face', blob);
         console.log("Blob created:", blob);
 
-        // try {
-        //   const response = await axios.post('/api/get_pic', formData, {
-        //     headers: {
-        //       'Content-Type': 'multipart/form-data'
-        //     }
-        //   });
-        // } catch (error) {
-        //   //console.error(`Error uploading image: ${error}`);
-        //   alert(`Error uploading image: ${error.response ? error.response.data.error : error.message}`);
-        // }
-      }, 'image/png');
 
+      }, 'image/png');
+      this.showRetakeButton = true;
+
+    },
+
+    restartStreaming() {
+      // 스트리밍 다시 시작
+      this.video.play();
+      this.showRetakeButton = false;
     },
 
     downloadImage(dataURL, fileName) {

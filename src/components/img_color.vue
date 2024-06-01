@@ -2,6 +2,7 @@
 
 
   <div class="original-image-container">
+    <button @click="color_list">리스트 보기</button>
     <div v-if="!imageUrl">
     <swiper class="swiper" ref="mySwiper" 
 		  :options="swiperOptions" 
@@ -59,7 +60,7 @@ export default {
       file: null,
       imageUrl: null,
       files: [],
-
+      
 
       selectedImageIndex: -1,
       // 서버를 통해 통신할땐 아래 배열 빈배열로 초기화시켜야함   @@##@@##@@##@@##@@##
@@ -82,6 +83,12 @@ export default {
     };
   },
   methods: {
+    // 리스트 보기 버튼 클릭 시 이미지 선택창 초기화
+    color_list(){
+      this.imageUrl = null;
+      this.file = null;
+    },
+
     // 그림파일 선택 시 지금 컴포넌트에서 서버로 직접 전송하는 메서드(디버그용으로 비활성화 상태)
     async send() {
       if (this.files.length === 0) {
