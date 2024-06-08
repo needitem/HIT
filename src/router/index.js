@@ -1,42 +1,36 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import Hair_Long from '../components/Hair_Long.vue'
-import Hair_Curl from '../components/Hair_Curl.vue'
+import Vue from "vue";
+import VueRouter from "vue-router";
+import MainVue from "../views/main.vue";
+import LoginVue from "../views/login.vue";
+import UsageVue from "../views/usage.vue";
 
-Vue.use(VueRouter)
+Vue.use(VueRouter);
 
 const routes = [
   {
-    path: '/',
-    name: 'home',
-    component: HomeView
+    path: "/",
+    name: "Main",
+    component: MainVue,
   },
   {
-    path: '/long',
-    name: 'long',
-    component: Hair_Long
+    path: "/login",
+    name: "login",
+    component: LoginVue,
+    meta: { hideHeader: true }, // Add meta field
   },
   {
-    path: '/curl',
-    name: 'curl',
-    component: Hair_Curl
-  },
-  {
-    path: '/about',
-    name: 'about',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
-  },
+    path: "/use",
+    name: "Use",
+    component: UsageVue,
 
-]
+  }  
+
+];
 
 const router = new VueRouter({
-  mode: 'history',
+  mode: "history", // URL에서 # 제거
   base: process.env.BASE_URL,
-  routes
-})
+  routes,
+});
 
-export default router
+export default router;
