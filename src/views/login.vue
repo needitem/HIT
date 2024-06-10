@@ -29,13 +29,13 @@ export default {
     };
   },
   methods: {
-  login() {
-    console.log("로그인 시도:", this.username, this.password);
+    login() {
+      console.log("로그인 시도:", this.username, this.password);
+    },
+    naverLogin() {
+      window.location.href = "https://b438-34-133-50-146.ngrok-free.app/naver";
+    },
   },
-  naverLogin() {
-    window.location.href = 'http://localhost:5000/naver_home';
-  }
-}
 };
 </script>
 

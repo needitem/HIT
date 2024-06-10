@@ -11,10 +11,10 @@ const storeName2 = "ColorUrls";
 export default new Vuex.Store({
     state: {
         showAppBar: true,
+
         images: [],
         colorImages: [],
 
-       
         uploadedImage: null,
         uploadedColorImage: null,
     },

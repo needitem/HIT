@@ -60,8 +60,8 @@ export default {
   },
   computed: {
     ...mapState([
-      "selectedHairIndex",
-      "images",
+      //"selectedHairIndex",
+      //"images",
       "uploadedImage",
       "uploadedColorImage",
     ]), // uploadedImage 추가

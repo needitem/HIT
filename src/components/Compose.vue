@@ -10,11 +10,15 @@
 
 <script>
 import axios from "axios";
+import { mapState } from "vuex";
 
 export default {
+  computed: {
+    ...mapState(["uploadedImage", "uploadedColorImage"]),
+  },
   data() {
     return {
-      imageSrc: require("@/assets/logo.png"), // 초기 이미지 경로
+      imageSrc: null, //require("@/assets/logo.png"), // 초기 이미지 경로
 
       face: null,
       hair: null,
@@ -24,30 +28,43 @@ export default {
     };
   },
   mounted() {
+    // 나중엔 얼굴도 vuex로 관리해야 할 듯!@@@ 바꿀것
     this.$bus.$on("face", (faceBlob) => {
       this.face = faceBlob;
-    });
-
-    this.$bus.$on("hair", (hairBlob) => {
-      this.hair = hairBlob;
-    });
-
-    this.$bus.$on("color", (colorBlob) => {
-      this.color = colorBlob;
     });
   },
 
   methods: {
+    // 문자열을 Blob으로 변환하는 함수
+    dataURLtoBlob(dataURL) {
+      const arr = dataURL.split(",");
+      const mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new Blob([u8arr], { type: mime });
+    },
     async send() {
-      if (!this.face || !this.hair || !this.color) {
+      // 새로운 ui에 대한 실험
+
+      if (!this.uploadedImage || !this.uploadedColorImage || !this.face) {
         alert("face, hair, color 전부 선택해 주세요");
         return;
       }
-
       this.formData.append("files", this.face, "face.png");
-      this.formData.append("files", this.hair, "target.png");
-      this.formData.append("files", this.color, "color.png");
-
+      this.formData.append(
+        "files",
+        this.dataURLtoBlob(this.uploadedImage),
+        "target.png"
+      );
+      this.formData.append(
+        "files",
+        this.dataURLtoBlob(this.uploadedColorImage),
+        "color.png"
+      );
       try {
         const response = await axios.post("/api/get_pic", this.formData, {
           headers: { "Content-Type": "multipart/form-data" },

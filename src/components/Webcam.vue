@@ -35,36 +35,6 @@ export default {
     this.getMediaStream();
   },
   methods: {
-    async sendImage() {
-      if (this.color_file != null && this.hair_file != null) {
-        if (this.files.length === 0) {
-          alert("Please select files to upload");
-          return;
-        }
-        const formData = new FormData();
-
-        this.files.forEach((file, index) => {
-          formData.append("files", this.hair_file);
-          formData.append("files", this.color_file);
-        });
-        try {
-          const response = await axios.post("/api/get_pic", formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          });
-          if (response.status === 200) {
-            alert("Files uploaded successfully");
-          } else {
-            // alert(Failed to upload files: ${response.data.error});
-          }
-        } catch (error) {
-          // alert(An error occurred: ${error.response ? error.response.data.error : error.message});
-        }
-      } else {
-        alert("Please input color&hair");
-      }
-    },
 
     getMediaStream() {
       navigator.mediaDevices
