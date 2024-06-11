@@ -15,6 +15,7 @@
 
 <script>
 import axios from "axios";
+import { mapState, mapMutations } from "vuex";
 
 export default {
   name: "start-video-practice",
@@ -29,12 +30,16 @@ export default {
       showRetakeButton: false,
     };
   },
+  computed: {
+    ...mapState(["uploadFaceImage"]),
+  },
   mounted() {
     this.video = this.$refs.video;
 
     this.getMediaStream();
   },
   methods: {
+    ...mapMutations(["SET_UPLOADED_FACE_IMAGE"]),
 
     getMediaStream() {
       navigator.mediaDevices
@@ -68,9 +73,11 @@ export default {
       const dataURL = canvas.toDataURL("image/png");
 
       canvas.toBlob(async (blob) => {
-        this.$bus.$emit("face", blob);
+        this.SET_UPLOADED_FACE_IMAGE(blob);
+        //this.$bus.$emit("face", blob);
         console.log("Blob created:", blob);
       }, "image/png");
+
       this.showRetakeButton = true;
     },
 

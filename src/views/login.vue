@@ -33,7 +33,7 @@ export default {
       console.log("로그인 시도:", this.username, this.password);
     },
     naverLogin() {
-      window.location.href = "https://b438-34-133-50-146.ngrok-free.app/naver";
+      window.location.href = process.env.VUE_APP_API_URL2;
     },
   },
 };

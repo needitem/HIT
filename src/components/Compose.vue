@@ -1,9 +1,9 @@
 <template>
   <div class="retouch-image-container">
-    <img :src="imageSrc" alt="원본 이미지" class="retouch-image" />
-    <button @click="generate">Send</button>
+    <img :src="this.imageSrc" alt="원본 이미지" class="retouch-image" />
+    <!-- <button @click="generate">Send</button> -->
     <div>
-      <button @click="send">캠, 헤어, 컬러 한번에 post하는 임시버튼</button>
+      <button @click="send">생성</button>
     </div>
   </div>
 </template>
@@ -14,24 +14,24 @@ import { mapState } from "vuex";
 
 export default {
   computed: {
-    ...mapState(["uploadedImage", "uploadedColorImage"]),
+    ...mapState(["uploadedImage", "uploadedColorImage", "uploadedFaceImage"]),
   },
   data() {
     return {
-      imageSrc: null, //require("@/assets/logo.png"), // 초기 이미지 경로
+      imageSrc: require("@/assets/man_icon.png"), // 초기 이미지 경로
 
-      face: null,
-      hair: null,
-      color: null,
-
+      // face: null,
+      // hair: null,
+      // color: null,
+      DB_ngrok: process.env.VUE_APP_API_URL2,
       formData: new FormData(),
     };
   },
   mounted() {
     // 나중엔 얼굴도 vuex로 관리해야 할 듯!@@@ 바꿀것
-    this.$bus.$on("face", (faceBlob) => {
-      this.face = faceBlob;
-    });
+    // this.$bus.$on("face", (faceBlob) => {
+    //   this.face = faceBlob;
+    // });
   },
 
   methods: {
@@ -50,11 +50,20 @@ export default {
     async send() {
       // 새로운 ui에 대한 실험
 
-      if (!this.uploadedImage || !this.uploadedColorImage || !this.face) {
-        alert("face, hair, color 전부 선택해 주세요");
+      if (!this.uploadedColorImage) {
+        alert("컬러 이미지를 업로드해주세요.");
         return;
       }
-      this.formData.append("files", this.face, "face.png");
+      if (!this.uploadedImage) {
+        alert("기본 이미지를 업로드해주세요.");
+        return;
+      }
+      if (!this.uploadedFaceImage) {
+        alert("얼굴 이미지를 업로드해주세요.");
+        return;
+      }
+      this.formData.append("files", this.uploadedFaceImage, "face.png");
+      //this.formData.append("files", this.face, "face.png");
       this.formData.append(
         "files",
         this.dataURLtoBlob(this.uploadedImage),
@@ -71,6 +80,7 @@ export default {
         });
         if (response.status === 200) {
           alert("Files uploaded successfully");
+          this.generate();
         } else {
           //  alert(`Failed to upload files: ${response.data.error}`);
         }
@@ -85,10 +95,22 @@ export default {
           responseType: "arraybuffer", // 바이너리 데이터로 요청
         });
 
-        const imageBlob = new Blob([response.data], { type: "image/jpeg" }); // 브라우저가 이해할 수 있는 Blob으로 변환
+        const imageBlob = new Blob([response.data], { type: "image/png" }); // 브라우저가 이해할 수 있는 Blob으로 변환
         const imageUrl = URL.createObjectURL(imageBlob);
 
-        this.imageSrc = imageUrl; // 이미지 URL을 Vue 데이터에 저장하여 이미지 소스로 설정
+        // 이미지 URL 변경 후 컴포넌트 업데이트
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.imageSrc = e.target.result;
+        };
+        reader.readAsDataURL(imageBlob);
+
+        // 2. 캐싱 방지 (선택 사항, 필요한 경우에만)
+        const timestamp = new Date().getTime();
+        this.imageSrc += `?t=${timestamp}`;
+
+        axios.post(DB_ngrok + "/image_save", this.imageSrc);
       } catch (error) {
         console.log("error:", error);
       }

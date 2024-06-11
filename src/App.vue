@@ -29,8 +29,7 @@ export default {
     },
   },
   methods: {
-    ...mapActions(["fetchImagesHair"]),
-    ...mapActions(["fetchImagesColor"]),
+    ...mapActions(["fetchImagesHair", "fetchImagesColor"]),
   },
 };
 </script>

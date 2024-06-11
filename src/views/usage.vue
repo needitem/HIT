@@ -67,7 +67,7 @@ export default {
     ]), // uploadedImage 추가
   },
   methods: {
-    ...mapMutations(["SET_UPLOADED_IMAGE"]),
+    //...mapMutations(["SET_UPLOADED_IMAGE"]),
   },
 };
 </script>
