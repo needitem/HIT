@@ -22,9 +22,7 @@ const routes = [
     path: "/use",
     name: "Use",
     component: UsageVue,
-
-  }  
-
+  },
 ];
 
 const router = new VueRouter({

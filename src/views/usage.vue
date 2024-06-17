@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div>
     <div class="content-container">
       <div class="left-box">
         <Webcam ref="webcam" />
@@ -72,14 +72,6 @@ export default {
 };
 </script>
 <style scoped>
-.container {
-  display: flex;
-  flex-direction: column;
-  /* 세로 방향으로 배치 */
-  height: 100vh;
-  /* 전체 화면 높이 사용 */
-}
-
 .content-container {
   display: flex;
   /* 가로 방향으로 배치 */

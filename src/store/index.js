@@ -15,9 +15,17 @@ export default new Vuex.Store({
         uploadedImage: null,
         uploadedColorImage: null,
         uploadedFaceImage: null,
-        
+        isLoggedIn: false, // 로그인 상태
+        userName: null,
     },
     mutations: {
+        // 로그인시 사용자 고유이름 저장
+        SET_USER_NAME(state, userName) {
+            state.userName = userName;
+        },
+        SET_IS_LOGGED_IN(state, isLoggedIn) {
+            state.isLoggedIn = isLoggedIn;
+        },
         SET_UPLOADED_COLOR_IMAGE(state, image) {
             state.uploadedColorImage = image;
         },

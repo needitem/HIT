@@ -4,6 +4,19 @@
     <!-- <button @click="generate">Send</button> -->
     <div>
       <button @click="send">생성</button>
+      <button @click="isShowModal">공유 아이콘</button>
+      <div v-if="showModal" class="modal">
+        <div class="modal-content">
+          <span class="close-button" @click="showModal = false">&times;</span>
+          <h2>인스타그램 공유</h2>
+          <img :src="this.imageBlob" />
+          <textarea
+            v-model="caption"
+            placeholder="메모를 입력하세요"
+          ></textarea>
+          <button @click="instagram_share">공유하기</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -20,21 +33,20 @@ export default {
     return {
       imageSrc: require("@/assets/man_icon.png"), // 초기 이미지 경로
 
-      // face: null,
-      // hair: null,
-      // color: null,
-      DB_ngrok: process.env.VUE_APP_API_URL2,
+      showModal: false,
+      imageBlob: null,
       formData: new FormData(),
     };
   },
-  mounted() {
-    // 나중엔 얼굴도 vuex로 관리해야 할 듯!@@@ 바꿀것
-    // this.$bus.$on("face", (faceBlob) => {
-    //   this.face = faceBlob;
-    // });
-  },
-
   methods: {
+    isShowModal() {
+      if (this.imageBlob != null) {
+        this.showModal = true;
+      } else {
+        alert("공유할 이미지가 없습니다.");
+      }
+    },
+
     // 문자열을 Blob으로 변환하는 함수
     dataURLtoBlob(dataURL) {
       const arr = dataURL.split(",");
@@ -95,24 +107,61 @@ export default {
           responseType: "arraybuffer", // 바이너리 데이터로 요청
         });
 
-        const imageBlob = new Blob([response.data], { type: "image/png" }); // 브라우저가 이해할 수 있는 Blob으로 변환
+        imageBlob = new Blob([response.data], { type: "image/png" }); // 브라우저가 이해할 수 있는 Blob으로 변환
         const imageUrl = URL.createObjectURL(imageBlob);
 
         // 이미지 URL 변경 후 컴포넌트 업데이트
 
         const reader = new FileReader();
         reader.onload = (e) => {
-          this.imageSrc = e.target.result;
+          this.imageSrc = e.target.result; // 이미지 표시
+
+          // 1. Base64 인코딩
+          const base64Image = e.target.result.split(",")[1]; // Data URL에서 base64 부분 추출
+          console.log("보낸문자", base64Image);
+          try {
+            // 2. 인코딩된 이미지 데이터 서버로 전송
+            const response = axios
+              .post("/DBapi/image_save", {
+                image: base64Image,
+              })
+              .then((response) => {
+                console.log("성공");
+              });
+          } catch (error) {
+            console.error("이미지 저장 중 오류 발생:", error);
+          }
         };
         reader.readAsDataURL(imageBlob);
 
         // 2. 캐싱 방지 (선택 사항, 필요한 경우에만)
         const timestamp = new Date().getTime();
         this.imageSrc += `?t=${timestamp}`;
-
-        axios.post(DB_ngrok + "/image_save", this.imageSrc);
       } catch (error) {
         console.log("error:", error);
+      }
+    },
+
+    async instagram_share() {
+      try {
+        // FormData 객체 생성 및 데이터 추가
+        const formData = new FormData();
+        const imageFile = this.imageBlob;
+        formData.append("image", imageFile); // 이미지 추가
+        formData.append("caption", this.caption);
+
+        // Axios 요청 (Content-Type 설정 중요!)
+        const response = await axios.post("/api/instagram_upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data", // 반드시 multipart/form-data로 설정
+          },
+        });
+
+        console.log("인스타그램 공유 성공:", response.data);
+      } catch (error) {
+        console.error("인스타그램 공유 에러 발생:", error);
+      } finally {
+        this.showModal = false; // 공유 후 모달 닫기
       }
     },
   },
@@ -153,5 +202,47 @@ button {
 
 button:hover {
   background-color: #0056b3;
+}
+
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 300px;
+}
+
+.close-button {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+textarea {
+  width: 100%;
+  height: 100px;
+  margin-bottom: 10px;
 }
 </style>
