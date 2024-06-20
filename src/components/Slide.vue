@@ -1,11 +1,21 @@
 <template>
   <div>
-    <button @click="activeSlide = activeSlide === 'style' ? null : 'style'">
-      스타일
-    </button>
-    <button @click="activeSlide = activeSlide === 'color' ? null : 'color'">
-      색상
-    </button>
+    <div class="button-container">
+      <button
+        @click="setActiveSlide('style')"
+        :class="{ active: activeSlide === 'style' }"
+        class="custom-button"
+      >
+        스타일
+      </button>
+      <button
+        @click="setActiveSlide('color')"
+        :class="{ active: activeSlide === 'color' }"
+        class="custom-button"
+      >
+        색상
+      </button>
+    </div>
 
     <transition name="fade" mode="out-in">
       <div v-if="activeSlide" :key="activeSlide" class="slide-container">
@@ -17,7 +27,9 @@
           :class="{ active: isActiveImage(index) }"
           @click="handleImageClick(index)"
         />
-        <img src="@/assets/plus.png" @click="showFileUploadDialog()" />
+        <button class="custom-button" @click="showFileUploadDialog()">
+          이미지 업로드
+        </button>
       </div>
     </transition>
   </div>
@@ -41,11 +53,10 @@ export default {
   },
   methods: {
     handleImageClick(index) {
-      if (index === this.hairImages.length) {
-        //실행할 함수();
+      if (index === this.filteredImages.length) {
         this.showFileUploadDialog();
       } else {
-        this.selectImage(index); // 기존 선택 로직 유지
+        this.selectImage(index);
       }
     },
     showFileUploadDialog() {
@@ -64,7 +75,7 @@ export default {
         reader.onload = (e) => {
           if (this.activeSlide === "style") {
             this.SET_UPLOADED_IMAGE(e.target.result);
-          } else {
+          } else if (this.activeSlide === "color") {
             this.SET_UPLOADED_COLOR_IMAGE(e.target.result);
           }
         };
@@ -80,68 +91,69 @@ export default {
 
     selectImage(index) {
       if (this.activeSlide === "style") {
-        this.SET_UPLOADED_IMAGE(this.$store.state.images[index]);
-      } else {
-        this.SET_UPLOADED_COLOR_IMAGE(this.$store.state.images[index]);
-      }
-    },
-
-    isActiveImage(index) {
-      return this.activeSlide === "style"
-        ? this.selectedHairIndex === index
-        : this.selectedColorIndex === index;
-    },
-
-    selectImage(index) {
-      if (this.activeSlide === "style") {
-        this.SET_UPLOADED_IMAGE(this.$store.state.hairImages[index]);
+        this.SET_UPLOADED_IMAGE(this.hairImages[index]);
       } else if (this.activeSlide === "color") {
-        this.SET_UPLOADED_COLOR_IMAGE(this.$store.state.colorImages[index]);
+        this.SET_UPLOADED_COLOR_IMAGE(this.colorImages[index]);
       }
     },
+
     setActiveSlide(slide) {
-      this.activeSlide = this.activeSlide === slide ? null : slide;
+      this.activeSlide = slide;
     },
   },
 };
 </script>
 
 <style scoped>
-/* 기존 스타일 유지 */
+.button-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px; /* 버튼과 슬라이드 간격 조정 */
+}
+
 .slide-container {
   display: flex;
-  /* 이미지들을 가로로 배치 */
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 20px;
-  /* 이미지 간 간격 조절 (원하는 값으로 변경) */
-}
-.slide-container img {
-  width: 100px;
-  height: auto;
-  border: 2px solid black;
 }
 
-/* 활성화된 이미지 스타일 */
+.slide-container img {
+  width: 120px;
+  height: 120px;
+  border: 2px solid black;
+  object-fit: cover;
+}
+
 .slide-container img.active {
   border-color: green;
-  /* 초록색 테두리 */
-}
-
-button {
-  margin: 5px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  background-color: #007bff;
-  color: white;
-  cursor: pointer;
 }
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.5s ease; /* Adjust duration and timing function as needed */
+  transition: opacity 0.5s ease;
 }
+
 .fade-enter,
 .fade-leave-to {
   opacity: 0;
+}
+
+.custom-button {
+  border: none;
+  color: black;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 18px; 
+  margin: 4px 2px;
+  cursor: pointer;
+  width: 250px;
+}
+
+.custom-button.active {
+  color: #4caf50; /* 활성 상태 텍스트 색상 (초록색) */
+  border-bottom: 2px solid #4caf50; /* 하단 테두리 초록색 */
 }
 </style>

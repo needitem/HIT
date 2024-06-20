@@ -1,13 +1,31 @@
 <template>
   <div class="original-image-container">
-    <br /><br />
-    <div class="camera">
+    <div class="camera" v-show="!showUploadedImage">
       <video id="video" ref="video" @canplay="playVideo"></video>
-      <button @click="takePhoto" v-show="!showRetakeButton">take Photo</button>
     </div>
-    <div>
-      <button @click="restartStreaming" v-show="showRetakeButton">
-        다시 찍기
+    <img
+      v-if="showUploadedImage"
+      :src="uploadedImageURL"
+      alt="Uploaded Image"
+      class="uploaded-image"
+    />
+    <div class="button-container">
+      <label for="fileInput" class="upload-button">사진 첨부</label>
+      <input
+        type="file"
+        accept="image/*"
+        ref="fileInput"
+        @change="handleFileUpload"
+        id="fileInput"
+        hidden
+      />
+      <button @click="showCameraView" v-if="showUploadedImage">카메라</button>
+      <button @click="takePhoto" v-if="!showUploadedImage && !showRetakeButton">
+        사진 촬영
+      </button>
+
+      <button @click="restartStreaming" v-if="showRetakeButton">
+        다시 촬영
       </button>
     </div>
   </div>
@@ -23,11 +41,11 @@ export default {
     return {
       video: null,
       streaming: false,
-      height: 0, //280,
-      width: 320, //280,
-
-      files: [],
+      height: 0,
+      width: 320,
       showRetakeButton: false,
+      showUploadedImage: false,
+      uploadedImageURL: null,
     };
   },
   computed: {
@@ -35,7 +53,6 @@ export default {
   },
   mounted() {
     this.video = this.$refs.video;
-
     this.getMediaStream();
   },
   methods: {
@@ -57,7 +74,6 @@ export default {
         this.streaming = true;
         this.height =
           (this.video.videoHeight / this.video.videoWidth) * this.width;
-
         this.video.height = this.height;
         this.video.width = this.width;
       }
@@ -71,28 +87,33 @@ export default {
       context.drawImage(this.video, 0, 0, this.width, this.height);
 
       const dataURL = canvas.toDataURL("image/png");
-
       canvas.toBlob(async (blob) => {
         this.SET_UPLOADED_FACE_IMAGE(blob);
-        //this.$bus.$emit("face", blob);
         console.log("Blob created:", blob);
       }, "image/png");
 
       this.showRetakeButton = true;
     },
-
+    handleFileUpload() {
+      const file = this.$refs.fileInput.files[0];
+      if (file) {
+        this.showUploadedImage = true;
+        this.uploadedImageURL = URL.createObjectURL(file);
+        this.SET_UPLOADED_FACE_IMAGE(file);
+      }
+    },
     restartStreaming() {
+      this.showUploadedImage = false;
+      this.uploadedImageURL = null;
       this.video.play();
       this.showRetakeButton = false;
+      this.$refs.fileInput.value = null; // Clear the file input
     },
 
-    downloadImage(dataURL, fileName) {
-      const a = document.createElement("a");
-      a.href = dataURL;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    showCameraView() {
+      this.showUploadedImage = false;
+      this.uploadedImageURL = null;
+      this.getMediaStream(); // Restart the video stream
     },
   },
 };
@@ -114,32 +135,66 @@ export default {
   background-color: #fff;
 }
 
-#video {
-  border: 1px solid black;
-  box-shadow: 2px 2px 3px black;
+.camera {
+  flex: 1;
+  /* Allow the camera to expand and take up available space */
   width: 100%;
-  height: auto;
-  margin-bottom: 20px;
 }
 
-.camera {
+#video {
   width: 100%;
-  height: auto;
-  display: inline-block;
+  height: 100%;
+  /* Make the video fill the camera container */
+  object-fit: cover;
+  /* Cover the container, maintaining aspect ratio */
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  /* Center buttons horizontally */
+  margin-bottom: 20px;
+  /* Add space from the bottom */
 }
 
 button {
   margin: 5px;
   padding: 10px 20px;
   border: none;
-
   border-radius: 5px;
-  background-color: #007bff;
+  background-color: #4caf50;
   color: white;
   cursor: pointer;
 }
 
 button:hover {
   background-color: #0056b3;
+}
+
+.original-image-container {
+  background-color: #fff;
+  border: 2px solid #ccc;
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+.take-photo-button {
+  margin-left: 120px;
+  /* 원하는 여백 크기 */
+}
+.upload-button {
+  /* Style the upload button label */
+  margin: 5px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4caf50;
+  color: white;
+  cursor: pointer;
+}
+
+.uploaded-image {
+  max-width: 100%;
+  max-height: 300px;
+  margin-bottom: 20px;
 }
 </style>

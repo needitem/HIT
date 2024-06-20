@@ -1,23 +1,31 @@
 <template>
   <div class="retouch-image-container">
-    <img :src="this.imageSrc" alt="원본 이미지" class="retouch-image" />
-    <!-- <button @click="generate">Send</button> -->
+    <img :src="imageSrc" alt="원본 이미지" class="retouch-image" />
+
     <div>
-      <button @click="send">생성</button>
-      <button @click="isShowModal">공유 아이콘</button>
-      <div v-if="showModal" class="modal">
-        <div class="modal-content">
-          <span class="close-button" @click="showModal = false">&times;</span>
-          <h2>인스타그램 공유</h2>
-          <img :src="this.imageBlob" />
-          <textarea
-            v-model="caption"
-            placeholder="메모를 입력하세요"
-          ></textarea>
-          <button @click="instagram_share">공유하기</button>
-        </div>
+      <button @click="send">생성하기</button>
+      <button @click="showModal = true">공유하기</button>
+    </div>
+
+    <div v-if="showModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" @click="showModal = false">&times;</span>
+        <h2>인스타그램 공유</h2>
+        <form>
+          <img
+            :src="imageSrc"
+            alt="공유할 이미지"
+            style="width: 100%; margin-bottom: 10px"
+          />
+          <textarea v-model="caption" placeholder="캡션 입력"></textarea>
+          <button type="button" @click="instagramShare">업로드</button>
+        </form>
       </div>
     </div>
+
+    <v-snackbar v-model="snackbar" :timeout="timeout">
+      {{ text }}
+    </v-snackbar>
   </div>
 </template>
 
@@ -27,27 +35,28 @@ import { mapState } from "vuex";
 
 export default {
   computed: {
-    ...mapState(["uploadedImage", "uploadedColorImage", "uploadedFaceImage"]),
+    ...mapState([
+      "uploadedImage",
+      "uploadedColorImage",
+      "uploadedFaceImage",
+      "isLoading",
+      "userName", // Vuex에서 가져올 사용자 이름 추가
+    ]),
   },
   data() {
     return {
       imageSrc: require("@/assets/man_icon.png"), // 초기 이미지 경로
-
       showModal: false,
       imageBlob: null,
       formData: new FormData(),
+      caption: "", // 인스타그램 캡션
+
+      snackbar: false,
+      text: "로그인이 필요한 기능입니다. 로그인을 해주세요",
+      timeout: 2000,
     };
   },
   methods: {
-    isShowModal() {
-      if (this.imageBlob != null) {
-        this.showModal = true;
-      } else {
-        alert("공유할 이미지가 없습니다.");
-      }
-    },
-
-    // 문자열을 Blob으로 변환하는 함수
     dataURLtoBlob(dataURL) {
       const arr = dataURL.split(",");
       const mime = arr[0].match(/:(.*?);/)[1];
@@ -60,7 +69,12 @@ export default {
       return new Blob([u8arr], { type: mime });
     },
     async send() {
-      // 새로운 ui에 대한 실험
+      if (this.$store.state.userName == null) {
+        this.snackbar = true;
+        this.$store.state.isLoading = false;
+        console.log("snackbar 상태", this.snackbar);
+        return false;
+      }
 
       if (!this.uploadedColorImage) {
         alert("컬러 이미지를 업로드해주세요.");
@@ -74,8 +88,10 @@ export default {
         alert("얼굴 이미지를 업로드해주세요.");
         return;
       }
+      this.$store.state.isLoading = true;
+
       this.formData.append("files", this.uploadedFaceImage, "face.png");
-      //this.formData.append("files", this.face, "face.png");
+
       this.formData.append(
         "files",
         this.dataURLtoBlob(this.uploadedImage),
@@ -90,78 +106,78 @@ export default {
         const response = await axios.post("/api/get_pic", this.formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+
         if (response.status === 200) {
-          alert("Files uploaded successfully");
+          //alert("Files uploaded successfully");
           this.generate();
         } else {
-          //  alert(`Failed to upload files: ${response.data.error}`);
+          // 에러 처리
+          this.$store.state.isLoading = false;
         }
       } catch (error) {
-        // alert(`An error occurred: ${error.response ? error.response.data.error : error.message}`);
+        // 에러 처리
+        this.$store.state.isLoading = false;
       }
     },
 
     async generate() {
       try {
         const response = await axios.get("/api/generate", {
-          responseType: "arraybuffer", // 바이너리 데이터로 요청
+          responseType: "arraybuffer",
         });
 
-        imageBlob = new Blob([response.data], { type: "image/png" }); // 브라우저가 이해할 수 있는 Blob으로 변환
-        const imageUrl = URL.createObjectURL(imageBlob);
-
-        // 이미지 URL 변경 후 컴포넌트 업데이트
+        this.imageBlob = new Blob([response.data], { type: "image/png" });
+        const imageUrl = URL.createObjectURL(this.imageBlob);
 
         const reader = new FileReader();
         reader.onload = (e) => {
-          this.imageSrc = e.target.result; // 이미지 표시
+          this.imageSrc = e.target.result;
 
-          // 1. Base64 인코딩
-          const base64Image = e.target.result.split(",")[1]; // Data URL에서 base64 부분 추출
-          console.log("보낸문자", base64Image);
-          try {
-            // 2. 인코딩된 이미지 데이터 서버로 전송
-            const response = axios
-              .post("/DBapi/image_save", {
-                image: base64Image,
-              })
-              .then((response) => {
-                console.log("성공");
-              });
-          } catch (error) {
-            console.error("이미지 저장 중 오류 발생:", error);
-          }
+          const base64Image = e.target.result.split(",")[1];
+          // try {
+          //   //axios.post("/DBapi/image_save", { image: base64Image });
+          // } catch (error) {
+          //   console.error("이미지 저장 중 오류 발생:", error);
+          // }
         };
-        reader.readAsDataURL(imageBlob);
-
-        // 2. 캐싱 방지 (선택 사항, 필요한 경우에만)
-        const timestamp = new Date().getTime();
-        this.imageSrc += `?t=${timestamp}`;
+        reader.readAsDataURL(this.imageBlob);
+        this.$store.state.isLoading = false;
       } catch (error) {
+        this.$store.state.isLoading = false;
         console.log("error:", error);
       }
     },
 
-    async instagram_share() {
+    async instagramShare() {
       try {
-        // FormData 객체 생성 및 데이터 추가
-        const formData = new FormData();
-        const imageFile = this.imageBlob;
-        formData.append("image", imageFile); // 이미지 추가
-        formData.append("caption", this.caption);
+        const reader = new FileReader();
+        reader.readAsDataURL(this.imageBlob);
 
-        // Axios 요청 (Content-Type 설정 중요!)
-        const response = await axios.post("/api/instagram_upload", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data", // 반드시 multipart/form-data로 설정
-          },
-        });
+        reader.onloadend = async () => {
+          const base64data = reader.result;
+          console.log("이미지", base64data);
+          const response = await axios.post(
+            "/api/instagram_upload",
+            {
+              image: base64data, // Base64 인코딩된 이미지 데이터 전송
+              caption: this.caption,
+              nickname: this.userName, // Vuex에서 가져온 사용자 이름 사용
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
-        console.log("인스타그램 공유 성공:", response.data);
+          console.log("인스타그램 공유 성공:", response.data);
+          alert("인스타그램 공유 성공!");
+        };
       } catch (error) {
         console.error("인스타그램 공유 에러 발생:", error);
+        alert("인스타그램 공유 에러 발생!");
       } finally {
-        this.showModal = false; // 공유 후 모달 닫기
+        this.showModal = false;
       }
     },
   },
@@ -195,7 +211,7 @@ button {
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
-  background-color: #007bff;
+  background-color: #4caf50;
   color: white;
   cursor: pointer;
 }
@@ -244,5 +260,13 @@ textarea {
   width: 100%;
   height: 100px;
   margin-bottom: 10px;
+}
+.retouch-image-container {
+  /* ... */
+  background-color: #fff;
+  border: 2px solid #ccc;
+  /* 테두리 추가 */
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);
+  /* 그림자 효과 추가 */
 }
 </style>

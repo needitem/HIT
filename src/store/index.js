@@ -17,6 +17,7 @@ export default new Vuex.Store({
         uploadedFaceImage: null,
         isLoggedIn: false, // 로그인 상태
         userName: null,
+        isLoading: false,
     },
     mutations: {
         // 로그인시 사용자 고유이름 저장
