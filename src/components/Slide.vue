@@ -1,159 +1,177 @@
 <template>
-  <div>
-    <div class="button-container">
-      <button
-        @click="setActiveSlide('style')"
-        :class="{ active: activeSlide === 'style' }"
-        class="custom-button"
-      >
-        스타일
-      </button>
-      <button
-        @click="setActiveSlide('color')"
-        :class="{ active: activeSlide === 'color' }"
-        class="custom-button"
-      >
-        색상
-      </button>
+  <div class="slide-wrapper">
+    <div class="slide-tabs">
+      <v-btn-toggle v-model="activeSlide" mandatory color="primary">
+        <v-btn value="style">
+          <v-icon left>mdi-content-cut</v-icon>스타일
+        </v-btn>
+        <v-btn value="color">
+          <v-icon left>mdi-palette</v-icon>색상
+        </v-btn>
+      </v-btn-toggle>
     </div>
 
     <transition name="fade" mode="out-in">
       <div v-if="activeSlide" :key="activeSlide" class="slide-container">
-        <img
-          v-for="(image, index) in filteredImages"
-          :key="index"
-          :src="image"
-          :alt="activeSlide + ' Image'"
-          :class="{ active: isActiveImage(index) }"
-          @click="handleImageClick(index)"
-        />
-        <button class="custom-button" @click="showFileUploadDialog()">
-          이미지 업로드
-        </button>
+        <div class="slide-scroll">
+          <div
+            v-for="(image, index) in filteredImages"
+            :key="index"
+            class="slide-item"
+            :class="{ active: isActiveImage(index) }"
+            @click="selectImage(index)"
+          >
+            <img :src="image" :alt="activeSlide + ' ' + index" />
+            <v-icon v-if="isActiveImage(index)" class="check-icon" color="success">mdi-check-circle</v-icon>
+          </div>
+          
+          <div class="slide-item upload-item" @click="showFileUploadDialog">
+            <v-icon size="32" color="grey">mdi-plus</v-icon>
+            <span>업로드</span>
+          </div>
+        </div>
       </div>
     </transition>
+    
+    <input ref="fileInput" type="file" accept="image/*" hidden @change="handleFileUpload" />
   </div>
 </template>
 
 <script>
-import { mapState, mapMutations } from "vuex";
+import { mapState, mapMutations } from 'vuex';
 
 export default {
+  name: 'ImageSlide',
   data() {
     return {
-      activeSlide: null,
+      activeSlide: 'style',
+      selectedStyleIndex: -1,
+      selectedColorIndex: -1,
     };
   },
   computed: {
-    ...mapState(["hairImages", "selectedHairIndex"]),
-    ...mapState(["colorImages", "selectedColorIndex"]),
+    ...mapState(['hairImages', 'colorImages']),
     filteredImages() {
-      return this.activeSlide === "style" ? this.hairImages : this.colorImages;
+      return this.activeSlide === 'style' ? this.hairImages : this.colorImages;
     },
   },
   methods: {
-    handleImageClick(index) {
-      if (index === this.filteredImages.length) {
-        this.showFileUploadDialog();
-      } else {
-        this.selectImage(index);
-      }
-    },
-    showFileUploadDialog() {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
-      input.onchange = this.handleFileUpload;
-      input.click();
-    },
-
-    ...mapMutations(["SET_UPLOADED_IMAGE", "SET_UPLOADED_COLOR_IMAGE"]),
-    handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (this.activeSlide === "style") {
-            this.SET_UPLOADED_IMAGE(e.target.result);
-          } else if (this.activeSlide === "color") {
-            this.SET_UPLOADED_COLOR_IMAGE(e.target.result);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    },
-
+    ...mapMutations(['SET_UPLOADED_IMAGE', 'SET_UPLOADED_COLOR_IMAGE']),
     isActiveImage(index) {
-      return this.activeSlide === "style"
-        ? this.selectedHairIndex === index
+      return this.activeSlide === 'style' 
+        ? this.selectedStyleIndex === index 
         : this.selectedColorIndex === index;
     },
-
     selectImage(index) {
-      if (this.activeSlide === "style") {
+      if (this.activeSlide === 'style') {
+        this.selectedStyleIndex = index;
         this.SET_UPLOADED_IMAGE(this.hairImages[index]);
-      } else if (this.activeSlide === "color") {
+      } else {
+        this.selectedColorIndex = index;
         this.SET_UPLOADED_COLOR_IMAGE(this.colorImages[index]);
       }
     },
-
-    setActiveSlide(slide) {
-      this.activeSlide = slide;
+    showFileUploadDialog() {
+      this.$refs.fileInput.click();
+    },
+    handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (this.activeSlide === 'style') {
+          this.SET_UPLOADED_IMAGE(e.target.result);
+          this.selectedStyleIndex = -1;
+        } else {
+          this.SET_UPLOADED_COLOR_IMAGE(e.target.result);
+          this.selectedColorIndex = -1;
+        }
+      };
+      reader.readAsDataURL(file);
+      this.$refs.fileInput.value = null;
     },
   },
 };
 </script>
 
 <style scoped>
-.button-container {
+.slide-wrapper {
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-top: 20px;
+}
+.slide-tabs {
   display: flex;
   justify-content: center;
-  margin-bottom: 20px; /* 버튼과 슬라이드 간격 조정 */
+  margin-bottom: 20px;
 }
-
 .slide-container {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  gap: 20px;
+  overflow: hidden;
 }
-
-.slide-container img {
+.slide-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 10px 0;
+  scroll-behavior: smooth;
+}
+.slide-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.slide-scroll::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+.slide-item {
+  position: relative;
+  flex-shrink: 0;
   width: 120px;
-  height: 120px;
-  border: 2px solid black;
+  height: 140px;
+  border: 3px solid transparent;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f5f5f5;
+}
+.slide-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.slide-item.active {
+  border-color: #4caf50;
+}
+.slide-item img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
-
-.slide-container img.active {
-  border-color: green;
+.check-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: white;
+  border-radius: 50%;
 }
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease;
+.upload-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #ccc;
+  background: #fafafa;
 }
-
-.fade-enter,
-.fade-leave-to {
+.upload-item span {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+}
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter, .fade-leave-to {
   opacity: 0;
-}
-
-.custom-button {
-  border: none;
-  color: black;
-  padding: 10px 20px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 18px; 
-  margin: 4px 2px;
-  cursor: pointer;
-  width: 250px;
-}
-
-.custom-button.active {
-  color: #4caf50; /* 활성 상태 텍스트 색상 (초록색) */
-  border-bottom: 2px solid #4caf50; /* 하단 테두리 초록색 */
 }
 </style>

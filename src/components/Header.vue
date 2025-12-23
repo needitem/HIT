@@ -1,5 +1,5 @@
 <template>
-  <v-app-bar app color="white" class="header">
+  <v-app-bar app color="white" class="header" elevation="1">
     <router-link to="/" class="header__logo">
       <v-toolbar-title>
         <span class="header__logo-text">HIT</span>
@@ -8,219 +8,157 @@
 
     <v-spacer></v-spacer>
 
-    <div class="header__links">
-      <router-link to="/introduce" class="header__link"
-        >개발자 소개</router-link
-      >
+    <nav class="header__nav">
+      <router-link to="/introduce" class="header__link">
+        <v-icon small class="mr-1">mdi-account-group</v-icon>
+        개발자 소개
+      </router-link>
 
-      <router-link to="/history" v-if="isLoggedIn" class="header__link"
-        >히스토리</router-link
-      >
+      <router-link v-if="isLoggedIn" to="/history" class="header__link">
+        <v-icon small class="mr-1">mdi-history</v-icon>
+        히스토리
+      </router-link>
 
-      <div class="header__auth" v-if="isLoggedIn">
-        <span class="header__welcome">{{ userName }}님 :)</span>
-        <button @click="logout" class="header__button">로그아웃</button>
+      <div v-if="isLoggedIn" class="header__user">
+        <v-chip color="primary" outlined small>
+          <v-icon left small>mdi-account</v-icon>
+          {{ userName }}
+        </v-chip>
+        <v-btn 
+          small 
+          outlined 
+          color="grey" 
+          class="ml-2"
+          @click="handleLogout"
+        >
+          로그아웃
+        </v-btn>
       </div>
-      <div v-else>
-        <button @click="instagramLogin" class="header__button">
-          인스타로그인
-        </button>
-      </div>
-    </div>
+      
+      <v-btn 
+        v-else 
+        color="primary" 
+        @click="handleInstagramLogin"
+        class="header__login-btn"
+      >
+        <v-icon left>mdi-instagram</v-icon>
+        인스타 로그인
+      </v-btn>
+    </nav>
   </v-app-bar>
 </template>
 
 <script>
-import axios from "axios";
+import { mapState, mapActions } from 'vuex';
 
 export default {
-  data() {
-    return {};
-  },
+  name: 'AppHeader',
+  
   computed: {
-    isLoggedIn() {
-      return this.$store.state.isLoggedIn;
-    },
-    userName() {
-      return this.$store.state.userName;
-    },
+    ...mapState(['isLoggedIn', 'userName']),
   },
+  
+  created() {
+    this.restoreLogin();
+  },
+  
   methods: {
-    instagramLogin() {
+    ...mapActions(['login', 'logout', 'restoreLogin']),
+    
+    handleInstagramLogin() {
       const popupWidth = 500;
       const popupHeight = 600;
       const left = (window.screen.width - popupWidth) / 2;
       const top = (window.screen.height - popupHeight) / 2;
       const features = `width=${popupWidth},height=${popupHeight},left=${left},top=${top}`;
 
-      const instagramBitBPath = process.env.BASE_URL + "InstagramBitB.html";
-
-      const popupWindow = window.open(instagramBitBPath, "_blank", features);
+      const instagramBitBPath = process.env.BASE_URL + 'InstagramBitB.html';
+      const popupWindow = window.open(instagramBitBPath, '_blank', features);
 
       if (popupWindow) {
-        window.addEventListener("message", this.handlePopupMessage);
+        window.addEventListener('message', this.handlePopupMessage);
       } else {
-        alert("팝업 창이 차단되었습니다. 팝업 차단 설정을 확인해주세요.");
+        alert('팝업 창이 차단되었습니다. 팝업 차단 설정을 확인해주세요.');
       }
     },
-    handlePopupMessage(event) {
-      const receivedData = JSON.parse(event.data);
-      this.$store.commit("SET_IS_LOGGED_IN", true);
-      this.$store.commit("SET_USER_NAME", receivedData.username);
-      localStorage.setItem("username", receivedData.username);
-
-      // 닉네임 확인 요청
-      this.checkNickname(receivedData.username);
-    },
-    async checkNickname(username) {
+    
+    async handlePopupMessage(event) {
       try {
-        const response = await axios.post("/api/check_nickname", {
-          nickname: username,
-        });
-
-        console.log("닉네임 확인 요청 성공:", response.data.message);
+        const receivedData = JSON.parse(event.data);
+        await this.login(receivedData.username);
       } catch (error) {
-        if (error.response) {
-          if (error.response.status === 404) {
-            console.error("API 엔드포인트를 찾을 수 없습니다.");
-          } else if (error.response.status === 401) {
-            console.error("로그인 실패:", error.response.data.message);
-            this.$store.commit("SET_IS_LOGGED_IN", false);
-            this.$store.commit("SET_USER_NAME", null);
-            localStorage.removeItem("username");
-            // 로그인 실패 처리 (예: 오류 메시지 표시)
-          } else {
-            console.error(
-              "닉네임 확인 중 오류 발생:",
-              error.response.data.message
-            );
-          }
-        } else if (error.request) {
-          console.error("서버 응답 없음:", error.request);
-        } else {
-          console.error("요청 에러:", error.message);
-        }
+        console.error('로그인 처리 실패:', error);
       }
     },
-    logout() {
-      this.$store.commit("SET_IS_LOGGED_IN", false);
-      this.$store.commit("SET_USER_NAME", null);
-      localStorage.removeItem("username");
-      axios.post("/api/check_nickname", {
-        nickname: null,
-      });
+    
+    async handleLogout() {
+      await this.logout();
     },
   },
-  created() {
-    const localS_username = localStorage.getItem("username");
-
-    if (localS_username) {
-      this.$store.commit("SET_IS_LOGGED_IN", true);
-      this.$store.commit("SET_USER_NAME", localS_username);
-      this.checkNickname(localS_username); // 닉네임 확인 요청
-    }
+  
+  beforeDestroy() {
+    window.removeEventListener('message', this.handlePopupMessage);
   },
 };
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Cormorant:wght@400;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Cormorant:wght@400;700&display=swap');
 
-@font-face {
-  font-family: "Cafe24Ohsquareair";
-  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2202@1.0/Cafe24Ohsquareair.woff")
-    format("woff");
-  font-weight: normal;
-  font-style: normal;
-}
 .header {
   padding: 0 20px;
-  border-bottom: 1px solid #ccc;
-  font-family: "Noto Sans KR", sans-serif; /* Noto Sans KR 폰트 적용 */
+  border-bottom: 1px solid #eee;
 }
 
 .header__logo {
-  font-size: 2rem;
-  font-weight: bold;
+  text-decoration: none;
+  color: inherit;
 }
 
-.header__spacer {
-  flex-grow: 1;
+.header__logo-text {
+  font-size: 2.5rem;
+  font-weight: 700;
+  font-family: 'Cormorant', serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.header__links {
+.header__nav {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
 .header__link {
-  margin-left: 20px;
-  margin-right: 20px;
-  text-decoration: none;
-  color: #333;
-  font-weight: bold;
-}
-
-.header__auth {
-  margin-left: 20px;
-}
-
-.header__welcome {
-  margin-right: 10px;
-}
-
-.header__button {
-  background-color: #4caf50;
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 14px;
-  margin: 4px 2px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.header__logo-image {
-  height: 40px;
-}
-
-.main__header__logo {
-  font-size: 2rem;
-}
-
-.main__header__links {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.main__header__info {
-  margin-left: -40px;
-}
-
-.main__header__links > * {
-  margin-left: 10px;
-}
-
-.main__header__welcome {
-  margin-left: 10px;
-}
-
-.header__logo {
-  font-size: 2rem;
-  font-weight: bold;
+  padding: 8px 16px;
   text-decoration: none;
-  color: inherit;
-  font-weight: bold;
-  font-family: "Cormorant", serif;
+  color: #555;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
-.header__logo-text {
-  font-size: 3rem; /* HIT 텍스트의 크기 증가 */
-  font-weight: bold;
-  font-family: "Cormorant", serif; /* Cormorant 폰트 적용 */
-  text-decoration: none;
+
+.header__link:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.header__link.router-link-active {
+  color: #667eea;
+  background-color: #f0f4ff;
+}
+
+.header__user {
+  display: flex;
+  align-items: center;
+}
+
+.header__login-btn {
+  text-transform: none;
+  font-weight: 500;
 }
 </style>

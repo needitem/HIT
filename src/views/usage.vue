@@ -1,126 +1,136 @@
 <template>
-  <div>
-    <v-overlay :value="isLoading">
-      <v-progress-circular indeterminate size="64"></v-progress-circular>
+  <div class="usage-page">
+    <v-overlay :value="isLoading" z-index="999">
+      <div class="loading-content">
+        <v-progress-circular indeterminate size="64" color="primary"></v-progress-circular>
+        <p class="mt-4">이미지 생성 중...</p>
+      </div>
     </v-overlay>
 
-    <div class="content-container">
-      <div class="column left">
+    <div class="usage-header">
+      <h1>AI 헤어스타일 변환</h1>
+      <p>원하는 스타일과 색상을 선택하고 새로운 나를 만나보세요!</p>
+    </div>
+
+    <div class="usage-content">
+      <div class="panel-container">
         <Webcam ref="webcam" />
-      </div>
-      <div class="column center">
-        <table>
-          <tr>
-            <td style="text-align: center">
+        
+        <div class="selection-panel">
+          <div class="selection-box">
+            <div class="selection-label">
+              <v-icon small color="primary">mdi-content-cut</v-icon>
               스타일
-              <div class="box">
-                <img
-                  v-if="uploadedImage"
-                  :src="uploadedImage"
-                  alt="Uploaded Image"
-                />
-              </div>
-            </td>
-            <td style="text-align: center">
+            </div>
+            <div class="selection-preview">
+              <img v-if="uploadedImage" :src="uploadedImage" alt="선택된 스타일" />
+              <v-icon v-else size="40" color="grey lighten-1">mdi-image-outline</v-icon>
+            </div>
+          </div>
+          
+          <div class="selection-box">
+            <div class="selection-label">
+              <v-icon small color="secondary">mdi-palette</v-icon>
               색상
-              <div class="box">
-                <img
-                  v-if="uploadedColorImage"
-                  :src="uploadedColorImage"
-                  alt="Uploaded Image"
-                />
-              </div>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div class="column right">
+            </div>
+            <div class="selection-preview">
+              <img v-if="uploadedColorImage" :src="uploadedColorImage" alt="선택된 색상" />
+              <v-icon v-else size="40" color="grey lighten-1">mdi-image-outline</v-icon>
+            </div>
+          </div>
+        </div>
+        
         <Compose ref="compose" />
       </div>
     </div>
+    
     <Slide />
   </div>
 </template>
 
 <script>
-import Webcam from "@/components/Webcam.vue";
-import Compose from "@/components/Compose.vue";
-import Slide from "@/components/Slide.vue";
-import { mapState, mapMutations } from "vuex";
+import Webcam from '@/components/Webcam.vue';
+import Compose from '@/components/Compose.vue';
+import Slide from '@/components/Slide.vue';
+import { mapState } from 'vuex';
 
 export default {
-  components: {
-    Webcam,
-    Compose,
-    Slide,
-  },
-  data() {
-    return {};
-  },
+  name: 'UsagePage',
+  components: { Webcam, Compose, Slide },
   computed: {
-    ...mapState(["uploadedImage", "uploadedColorImage", "isLoading"]),
-  },
-  methods: {
-    //...mapMutations(["SET_UPLOADED_IMAGE"]),
+    ...mapState(['uploadedImage', 'uploadedColorImage', 'isLoading']),
   },
 };
 </script>
 
 <style scoped>
-td {
-  display: block;
-  margin: 10px auto;
-  border: 1px solid #ccc;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-  background-color: #fff;
+.usage-page {
+  padding: 30px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+}
+.usage-header {
   text-align: center;
-  padding: 0;
+  margin-bottom: 30px;
 }
-
-table {
-  border-collapse: collapse;
-  padding: 0;
-  width: fit-content;
-  max-width: 100%;
+.usage-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
 }
-
-.content-container {
+.usage-header p {
+  color: #666;
+  font-size: 1.1rem;
+}
+.usage-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.panel-container {
   display: flex;
-  justify-content: center; /* Center the whole content */
-  align-items: center;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
 }
-
-.column {
+.selection-panel {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin: 0 10px; /* Reduce the margin to bring columns closer */
+  gap: 16px;
 }
-
-.left,
-.right {
-  flex: 0 0 auto; /* Prevent these columns from growing */
+.selection-box {
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
-
-.center {
-  flex: 0 1 auto; /* Allow the center column to take up necessary space */
-}
-
-.box {
-  width: 160px;
-  height: 200px;
-  margin: 10px 10px;
+.selection-label {
   display: flex;
   align-items: center;
-  border-radius: 10px;
-  background-color: #f2f2f2;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 8px;
 }
-
-.box img {
-  margin: auto;
-  max-width: 90%;
-  max-height: 90%;
-  display: block;
+.selection-preview {
+  width: 140px;
+  height: 180px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.selection-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.loading-content {
+  text-align: center;
+  color: white;
 }
 </style>
